@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import requests, os
+import requests, os, json
 from html.parser import HTMLParser
 import urllib3
 from PathfinderFunctions import change_crawler_session, soup_function, get_file
@@ -12,7 +12,9 @@ exts = ['.zip','.epub']
 url_download_list = {}
 url_login = 'https://paizo.com/cgi-bin/WebObjects/Store.woa/wa/DirectAction/signIn?path=paizo'
 url_account_files = 'https://paizo.com/paizo/account/assets'
-data = {'e': 'EMAIL', 'zzz': 'PASSWORD'}
+with open("paizo_auth.dat") as f:
+	login_info = json.load(f)
+data = {'e': login_info['email'], 'zzz': login_info['password']}
 
 session = requests.Session()
 holder = change_crawler_session(url_login, data, url_account_files, session)
@@ -35,9 +37,9 @@ if found == 0:
     print("No download links found?")
     print(soup)
     exit(1)
-        
+
 for name in url_download_list:
-    print("== File:",name)    
+    print("== File:",name)
     if not os.path.exists(os.path.join("PaizoLibrary",name)):
         print("Not in library, trying to find download link")
         link = url_download_list[name]
@@ -51,4 +53,3 @@ for name in url_download_list:
             print("*********** No download link found? *************")
     else:
         print("Already in library, skipping")
-            
