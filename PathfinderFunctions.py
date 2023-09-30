@@ -1,5 +1,5 @@
 import zipfile
-import io
+import io, os
 from bs4 import BeautifulSoup
 
 
@@ -22,8 +22,8 @@ def unzip_file(content):
     return unzip
 
 
-def set_unzip_folder(zipbytes, folder_name):
-    zipbytes.extractall('{}'.format(folder_name))
+def set_unzip_folder(zipbytes, outdir):
+    zipbytes.extractall(outdir)
 
 
 def change_crawler_session(login_path, user_credentials, account_files, current_session):
@@ -32,10 +32,20 @@ def change_crawler_session(login_path, user_credentials, account_files, current_
     return current_session.get(account_files)
 
 
-def get_file(link_to_file, file_link, current_session):
-    if link_to_file.get('href') is not None and file_link in link_to_file.get('href'):
-        book_name = format_book_title(link_to_file)
+def get_file(link_to_file, exts, current_session, book_name):
+    link = link_to_file.get('href')
+    outdir = './PaizoLibrary/{}'.format(book_name)
+    if link is not None and any(link.endswith(ext) for ext in exts):
+        print("Found valid download link, downloading:",book_name)
         response = current_session.get(link_to_file.get('href'))
-        zip_bin = unzip_file(response.content)
-        set_unzip_folder(zip_bin, book_name)
+        if link.endswith(".zip"):
+            zip_bin = unzip_file(response.content)
+            set_unzip_folder(zip_bin, outdir)
+        else:
+            filename = link.rpartition("/")[2]
+            os.mkdir(outdir)
+            with open(os.path.join(outdir,filename), "wb") as f:
+                f.write(io.BytesIO(response.content).getbuffer())
+        return True
+    return False
 
